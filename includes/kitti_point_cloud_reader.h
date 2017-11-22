@@ -21,14 +21,6 @@ namespace Visualizer {
     };
     float data[4];
   };
-
-  struct pointXYZIL{
-    unsigned short x;
-    unsigned short y;
-    unsigned short z;
-    unsigned char i;
-    unsigned char l;
-  };
 }
 #endif
 
@@ -78,10 +70,6 @@ public:
   // returns false if the frame number is bigger than existing frames
   // or if an error occurs (see application output to see messages)
   const bool goto_frame(const unsigned int frame_number = 0);
-  // Reads the files in order, this is incremental and does not change when you change the frame
-  const bool read_next(const bool start = false);
-  // This signal is triggered after the frame's data is readed.
-  boost::signals2::signal<void ()> *signal();
   // Connects th function goto_frame to an external boost::signal
   // It disconnects any old connection to goto_frame().
   void connect_frame(boost::signals2::signal<void (unsigned int)> *signal);
@@ -91,6 +79,8 @@ public:
   // Connects th function read_next to an external boost::signal.
   // It disconnects any old connection to read_next().
   void connect_reader(boost::signals2::signal<void ()> *signal);
+  // This signal is triggered after the frame's data is readed.
+  boost::signals2::signal<void ()> *signal();
 
 private:
   std::vector<Visualizer::pointXYZI> point_cloud_;
@@ -99,9 +89,7 @@ private:
   unsigned int frame_, total_frames_;
 
   boost::signals2::signal<void ()> signal_;
-  boost::signals2::connection frame_connection_, dataset_connection_, read_next_connection_;
-
-  boost::filesystem::directory_iterator dir_itr_;
+  boost::signals2::connection frame_connection_, dataset_connection_;
 };
 
 #endif // KITTI_POINT_CLOUD_READER_H

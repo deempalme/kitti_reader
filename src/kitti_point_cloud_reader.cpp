@@ -26,8 +26,6 @@ KittiPointCloudReader::~KittiPointCloudReader(){
     frame_connection_.disconnect();
   if(dataset_connection_.connected())
     dataset_connection_.disconnect();
-  if(read_next_connection_.connected())
-    read_next_connection_.disconnect();
 }
 
 const bool KittiPointCloudReader::set_dataset(const unsigned int dataset_number){
@@ -44,7 +42,6 @@ const bool KittiPointCloudReader::set_dataset(const unsigned int dataset_number)
 
   if(boost::filesystem::exists(directory)){
     //viewing all the files inside the folder
-    dir_itr_ = boost::filesystem::directory_iterator(directory);
     for(const boost::filesystem::directory_entry &entry :
         boost::filesystem::directory_iterator(directory))
       if(boost::filesystem::is_regular_file(entry.path()))
@@ -114,61 +111,6 @@ const bool KittiPointCloudReader::goto_frame(const unsigned int frame_number){
   return result;
 }
 
-const bool KittiPointCloudReader::read_next(const bool start){
-  bool result = false;
-
-  if(start || frame_ >= total_frames_){
-    frame_ = 0;
-    dir_itr_ = boost::filesystem::directory_iterator(
-          boost::filesystem::path(folder_path_ + "data/"));
-  }
-
-  point_cloud_.clear();
-
-  if(boost::filesystem::is_regular_file(dir_itr_->path())){
-    size_t element_size = sizeof(Visualizer::pointXYZIL);
-
-    //open the binary file of the velodyne_points folder
-    std::ifstream file(dir_itr_->path().string(), std::ifstream::ate | std::ifstream::binary);
-    if(file.is_open()){
-      // this read the file size in bytes:
-      std::ifstream::pos_type file_size = file.tellg();
-
-      size_t size{file_size / element_size};
-      point_cloud_.resize(size);
-      std::vector<Visualizer::pointXYZIL> temporal(size);
-
-      file.seekg(0, file.beg);
-      file.read((char*)temporal.data(), file_size);
-
-      //close the opened file
-      file.close();
-      result = true;
-
-      for(size_t i = 0; i < size; i++){
-        unsigned short intensity{0};
-        intensity |= temporal.at(i).i;
-        point_cloud_[i].x = (temporal.at(i).x * 0.005f - 100.0f);
-        point_cloud_[i].y = -(temporal.at(i).y * 0.005f - 100.0f);
-        point_cloud_[i].z = -(temporal.at(i).z * 0.005f - 100.0f);
-        point_cloud_[i].intensity = 1.0f - intensity / 255.0f;
-      }
-
-      signal_();
-    }else
-      //if an error occurs opening the file then this line will pop up
-      std::cout << "the file: " << dir_itr_->path().string() << " was not found." << std::endl;
-  }
-  dir_itr_++;
-  frame_++;
-
-  return result;
-}
-
-boost::signals2::signal<void ()> *KittiPointCloudReader::signal(){
-  return &signal_;
-}
-
 void KittiPointCloudReader::connect_frame(boost::signals2::signal<void (unsigned int)> *signal){
   if(frame_connection_.connected())
     frame_connection_.disconnect();
@@ -181,10 +123,9 @@ void KittiPointCloudReader::connect_dataset(boost::signals2::signal<void (unsign
   dataset_connection_ = signal->connect(boost::bind(&KittiPointCloudReader::set_dataset, this, _1));
 }
 
-void KittiPointCloudReader::connect_reader(boost::signals2::signal<void ()> *signal){
-  if(read_next_connection_.connected())
-    read_next_connection_.disconnect();
-  read_next_connection_ = signal->connect(boost::bind(&KittiPointCloudReader::read_next, this, false));
+
+boost::signals2::signal<void ()> *KittiPointCloudReader::signal(){
+  return &signal_;
 }
 
 const unsigned int KittiPointCloudReader::actual_frame(){
