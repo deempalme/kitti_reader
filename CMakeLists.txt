@@ -13,6 +13,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# finding dependencies
+find_package(Boost COMPONENTS system filesystem thread REQUIRED)
+
 #header files
 set(HPP_FILES
   includes/kitti_point_cloud_reader.h
@@ -35,4 +38,9 @@ set(KITTI_LIB ${KITTI_NAME} PARENT_SCOPE)
 add_library(${KITTI_NAME}
   ${HPP_FILES}
   ${CPP_FILES}
+)
+
+#indicates which libraries to use in the executable
+target_link_libraries(${KITTI_NAME}
+  ${Boost_LIBRARIES}
 )
