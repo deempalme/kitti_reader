@@ -1,13 +1,21 @@
 #include "kitti/kitti_point_cloud_reader.h"
 
 namespace Kitti {
-  KittiPointCloudReader::KittiPointCloudReader(const std::string folder_path) :
-    folder_path_(folder_path),
+  template<typename T>
+  KittiPointCloudReader<T>::KittiPointCloudReader(const std::string kitti_folder_path,
+                                               const std::string subfolder_path) :
+    point_cloud_(0),
+    timestamp_(),
+    folder_path_(kitti_folder_path),
+    subfolder_path_(subfolder_path),
     frame_(0),
     total_frames_(0)
   {
     if(folder_path_.front() != '/') folder_path_ = "/" + folder_path_;
     if(folder_path_.back() != '/') folder_path_ += "/";
+
+    if(subfolder_path_.front() != '/') subfolder_path_ = '/' + subfolder_path_;
+    if(subfolder_path_.back() != '/') subfolder_path_ += '/';
 
     const std::string first_path(folder_path_);
 
@@ -19,27 +27,27 @@ namespace Kitti {
                      "  Neither: " << folder_path_ << "\n";
     }
 
-    folder_path_ += "raw/0000_sync/velodyne_points/";
+    folder_path_ += "raw/0000_sync";
   }
 
-  KittiPointCloudReader::~KittiPointCloudReader(){
+  template<typename T>
+  KittiPointCloudReader<T>::~KittiPointCloudReader(){
     if(frame_connection_.connected())
       frame_connection_.disconnect();
     if(dataset_connection_.connected())
       dataset_connection_.disconnect();
   }
 
-  const bool KittiPointCloudReader::set_dataset(const unsigned int dataset_number){
-    bool result = false;
-
+  template<typename T>
+  const bool KittiPointCloudReader<T>::SetDataset(const unsigned int dataset_number){
     const std::string dataset(std::to_string(dataset_number));
-    folder_path_.replace(folder_path_.end() - 22 - dataset.size(), folder_path_.end() - 22, dataset);
+    folder_path_.replace(folder_path_.end() - 5 - dataset.size(), folder_path_.end() - 5, dataset);
 
     frame_ = 0;
     total_frames_ = 0;
 
     //opening the folder
-    boost::filesystem::path directory(folder_path_ + "data/");
+    boost::filesystem::path directory(folder_path_ + subfolder_path_);
 
     if(boost::filesystem::exists(directory)){
       //viewing all the files inside the folder
@@ -48,16 +56,19 @@ namespace Kitti {
         if(boost::filesystem::is_regular_file(entry.path()))
           total_frames_++;
 
-      result = true;
       point_cloud_.clear();
-    }
+      return true;
+    }else
+      std::cout << "\n\033[1;41m Error: \033[0;1;38;5;174m The folder: " << folder_path_
+                << subfolder_path_ << " was not found. \033[0m\n" << std::endl;
 
-    return result;
+    return false;
   }
 
-  const bool KittiPointCloudReader::goto_frame(const unsigned int frame_number){
+  template<typename T>
+  const bool KittiPointCloudReader<T>::GoToFrame(const unsigned int frame_number){
     bool result{false};
-    std::size_t element_size{sizeof(Visualizer::pointXYZI)};
+    std::size_t element_size{sizeof(T)};
 
     //check if the selected frame number is bigger than existing frames
     if(frame_number < total_frames_){
@@ -73,7 +84,7 @@ namespace Kitti {
       file_name.replace(file_name.begin() + 10 - number.size(), file_name.begin() + 10, number);
 
       //open the binary file of the velodyne_points folder
-      std::ifstream file(std::string(folder_path_ + "data/" + file_name).c_str(),
+      std::ifstream file(std::string(folder_path_ + subfolder_path_ + file_name).c_str(),
                     std::ifstream::ate | std::ifstream::binary);
       if(file.is_open()){
         // this read the file size in bytes:
@@ -81,6 +92,7 @@ namespace Kitti {
 
         point_cloud_.resize(file_size / element_size);
 
+        file.clear();
         file.seekg(0, file.beg);
         file.read((char*)point_cloud_.data(), file_size);
 
@@ -91,9 +103,10 @@ namespace Kitti {
         signal_();
       }else
         //if an error occurs opening the file then this line will pop up
-        std::cout << "the file: " << folder_path_ + file_name << " was not found." << std::endl;
+        std::cout << "the file: " << folder_path_ << subfolder_path_ << file_name
+                  << " was not found." << std::endl;
 
-      std::ifstream file_t(std::string(folder_path_ + "timestamps.txt").c_str());
+      std::ifstream file_t(std::string(folder_path_ + subfolder_path_ + "timestamps.txt").c_str());
       if(file_t.is_open()){
         for(int i = 0; i <= frame_; i++){
           std::getline(file_t, timestamp_, '\n');
@@ -105,43 +118,55 @@ namespace Kitti {
       }else{
         result = false;
         //if an error occurs opening the timestamp file then this line will pop up
-        std::cout << "the timestamp file: " << folder_path_ << "timestamps.txt was not found."
-                  << std::endl;
+//        std::cout << "the timestamp file: " << folder_path_ << subfolder_path_
+//                  << "timestamps.txt was not found." << std::endl;
       }
     }
     return result;
   }
 
-  void KittiPointCloudReader::connect_frame(boost::signals2::signal<void (unsigned int)> *signal){
+  template<typename T>
+  void KittiPointCloudReader<T>::ConnectFrame(boost::signals2::signal<void (unsigned int)> *signal){
     if(frame_connection_.connected())
       frame_connection_.disconnect();
-    frame_connection_ = signal->connect(boost::bind(&KittiPointCloudReader::goto_frame, this, _1));
+    frame_connection_ = signal->connect(boost::bind(&KittiPointCloudReader<T>::GoToFrame, this, _1));
   }
 
-  void KittiPointCloudReader::connect_dataset(boost::signals2::signal<void (unsigned int)> *signal){
+  template<typename T>
+  void KittiPointCloudReader<T>::ConnectDataset(boost::signals2::signal<void (unsigned int)> *signal){
     if(dataset_connection_.connected())
       dataset_connection_.disconnect();
-    dataset_connection_ = signal->connect(boost::bind(&KittiPointCloudReader::set_dataset, this, _1));
+    dataset_connection_ =
+        signal->connect(boost::bind(&KittiPointCloudReader<T>::SetDataset, this, _1));
   }
 
-
-  boost::signals2::signal<void ()> *KittiPointCloudReader::signal(){
+  template<typename T>
+  boost::signals2::signal<void ()> *KittiPointCloudReader<T>::Signal(){
     return &signal_;
   }
 
-  const unsigned int KittiPointCloudReader::actual_frame(){
+  template<typename T>
+  const unsigned int KittiPointCloudReader<T>::ActualFrame(){
     return frame_;
   }
 
-  const unsigned int KittiPointCloudReader::total_frames(){
+  template<typename T>
+  const unsigned int KittiPointCloudReader<T>::TotalFrames(){
     return total_frames_;
   }
 
-  const std::vector<Visualizer::pointXYZI> *const KittiPointCloudReader::point_cloud(){
+  template<typename T>
+  const std::vector<T> *const KittiPointCloudReader<T>::PointCloud(){
     return &point_cloud_;
   }
 
-  const std::string *const KittiPointCloudReader::timestamp(){
+  template<typename T>
+  const std::string *const KittiPointCloudReader<T>::Timestamp(){
     return &timestamp_;
   }
+
+  template class KittiPointCloudReader<Visualizer::PointXYZI>;
+  template class KittiPointCloudReader<Visualizer::PointXYZRGB>;
+  template class KittiPointCloudReader<Visualizer::PointXYZRGBI>;
+  template class KittiPointCloudReader<Visualizer::PointXYZRGBA>;
 }

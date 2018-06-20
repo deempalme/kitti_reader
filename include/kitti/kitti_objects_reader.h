@@ -1,6 +1,8 @@
 #ifndef KITTI_OBJECTS_READER_H
 #define KITTI_OBJECTS_READER_H
 
+#include "kitti/types.h"
+
 #include "algebraica/algebraica.h"
 
 #include <boost/filesystem.hpp>
@@ -10,44 +12,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-#ifndef O_M_D
-#define O_M_D
-namespace Visualizer {
-  struct Object{
-    // Object position (LOCATED at the object's center)
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
-    // Object orientation (in radians)
-    struct{
-      float x = 0.0f;
-      float y = 0.0f;
-      float z = 0.0f;
-      float w = 0.0f;
-    } orientation, arrow_orientation;
-    // Object's size in meters
-    float width  = 1.0f;
-    float length = 1.0f;
-    float height = 1.0f;
-    // Object's color (0 to 255)
-    float r     = 255.0f;
-    float g     = 255.0f;
-    float b     = 255.0f;
-    float alpha = 255.0f;
-    // Arrow's properties:
-    // Arrow's length in meters
-    float arrow_length = 1.0f;
-    // Displays the arrow
-    bool arrow = true;
-    // Displays the object as a solid (filled faces)
-    bool solid = false;
-    // Line width in meters
-    float line_width = 0.1f;
-    std::string name;
-  };
-}
-#endif
 
 namespace Kitti {
   struct Obstacles{
@@ -87,33 +51,33 @@ namespace Kitti {
     ~KittiObjectsReader();
 
     //returns the actual frame position
-    const unsigned int actual_frame();
+    const unsigned int ActualFrame();
     //returns the number of obstacles in the actual frame
-    const unsigned int total_obstacles();
+    const unsigned int TotalObstacles();
 
     //this vector contains all the obstacles found in the actual frame
-    const std::vector<Visualizer::Object> *obstacles() const;
+    const std::vector<Visualizer::Object> *GetObstacles() const;
 
     //set a new kitti Dataset,
     //returns false if the folder was not found
     //if you set datasetNumber = 1; then the complete folder name will be 0001_sync
     //note that dates from the folder name were removed, example: "2011_09_26_0001_sync" --> "0001_sync"
-    bool set_dataset(const unsigned int dataset_number = 1);
+    bool SetDataset(const unsigned int dataset_number = 1);
     //set the frame in a specific frame number,
     //returns false if there are no obstacles found
-    bool goto_frame(const unsigned int frame_number = 0);
+    bool GoToFrame(const unsigned int frame_number = 0);
     // Connects th function goto_frame to an external boost::signal
     // It disconnects any old connection to goto_frame().
-    void connect_frame(boost::signals2::signal<void (unsigned int)> *signal);
+    void ConnectFrame(boost::signals2::signal<void (unsigned int)> *signal);
     // Connects th function set_dataset to an external boost::signal.
     // It disconnects any old connection to set_dataset().
-    void connect_dataset(boost::signals2::signal<void (unsigned int)> *signal);
+    void ConnectDataset(boost::signals2::signal<void (unsigned int)> *signal);
     // This signal is triggered after the frame's data is readed.
-    boost::signals2::signal<void ()> *signal();
+    boost::signals2::signal<void ()> *Signal();
 
   private:
     //this vector contains all the obstacles found in all frames
-    std::vector<Obstacles> all_obstacles_;
+    std::vector<Kitti::Obstacles> all_obstacles_;
     std::vector<Visualizer::Object> obstacles_;
 
     std::string folder_path_;

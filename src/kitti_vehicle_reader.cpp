@@ -93,7 +93,7 @@ namespace Kitti {
       dataset_connection_.disconnect();
   }
 
-  const bool KittiVehicleReader::set_dataset(const unsigned int dataset_number){
+  const bool KittiVehicleReader::SetDataset(const unsigned int dataset_number){
     bool result = false;
 
     std::string dataset(std::to_string(dataset_number));
@@ -118,7 +118,7 @@ namespace Kitti {
     return result;
   }
 
-  const bool KittiVehicleReader::goto_frame(const unsigned int frame_number){
+  const bool KittiVehicleReader::GoToFrame(const unsigned int frame_number){
     bool result = false;
 
     //check if the selected frame number is bigger than existing frames
@@ -200,39 +200,39 @@ namespace Kitti {
     return result;
   }
 
-  void KittiVehicleReader::connect_frame(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiVehicleReader::ConnectFrame(boost::signals2::signal<void (unsigned int)> *signal){
     if(frame_connection_.connected())
       frame_connection_.disconnect();
-    frame_connection_ = signal->connect(boost::bind(&KittiVehicleReader::goto_frame, this, _1));
+    frame_connection_ = signal->connect(boost::bind(&KittiVehicleReader::GoToFrame, this, _1));
   }
 
-  void KittiVehicleReader::connect_dataset(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiVehicleReader::ConnectDataset(boost::signals2::signal<void (unsigned int)> *signal){
     if(dataset_connection_.connected())
       dataset_connection_.disconnect();
-    dataset_connection_ = signal->connect(boost::bind(&KittiVehicleReader::set_dataset, this, _1));
+    dataset_connection_ = signal->connect(boost::bind(&KittiVehicleReader::SetDataset, this, _1));
   }
 
-  boost::signals2::signal<void ()> *KittiVehicleReader::signal(){
+  boost::signals2::signal<void ()> *KittiVehicleReader::Signal(){
     return &signal_;
   }
 
-  const unsigned int KittiVehicleReader::actual_frame(){
+  const unsigned int KittiVehicleReader::ActualFrame(){
     return frame_;
   }
 
-  const unsigned int KittiVehicleReader::total_frames(){
+  const unsigned int KittiVehicleReader::TotalFrames(){
     return total_frames_;
   }
 
-  const Visualizer::Vehicle *const KittiVehicleReader::vehicle(){
+  const Visualizer::Vehicle *const KittiVehicleReader::Vehicle(){
     return &vehicle_;
   }
 
-  const std::string *const KittiVehicleReader::timestamp(){
+  const std::string *const KittiVehicleReader::Timestamp(){
     return &timestamp_;
   }
 
-  const Visualizer::OrientationPYR *KittiVehicleReader::euler_angles() const{
+  const Visualizer::OrientationPYR *KittiVehicleReader::EulerAngles() const{
     return &vehicle_.euler;
   }
 }

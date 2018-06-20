@@ -33,19 +33,19 @@ namespace Kitti {
       dataset_connection_.disconnect();
   }
 
-  const unsigned int KittiObjectsReader::actual_frame(){
+  const unsigned int KittiObjectsReader::ActualFrame(){
     return frame_;
   }
 
-  const unsigned int KittiObjectsReader::total_obstacles(){
+  const unsigned int KittiObjectsReader::TotalObstacles(){
     return total_obstacles_;
   }
 
-  const std::vector<Visualizer::Object> *KittiObjectsReader::obstacles() const{
+  const std::vector<Visualizer::Object> *KittiObjectsReader::GetObstacles() const{
     return &obstacles_;
   }
 
-  bool KittiObjectsReader::set_dataset(const unsigned int dataset_number){
+  bool KittiObjectsReader::SetDataset(const unsigned int dataset_number){
 
     const std::string dataset(std::to_string(dataset_number));
     folder_path_.replace(folder_path_.end() - 25 - dataset.size(), folder_path_.end() - 25, dataset);
@@ -68,7 +68,7 @@ namespace Kitti {
       std::cout << std::setprecision(3) << std::fixed;
 
       while(item){
-        Obstacles datum;
+        Kitti::Obstacles datum;
 
         datum.first_frame = std::stoi(item->FirstChildElement("first_frame", false)->GetText());
         datum.last_frame = datum.first_frame + std::stoi(item->FirstChild("poses", false)
@@ -122,7 +122,7 @@ namespace Kitti {
     return false;
   }
 
-  bool KittiObjectsReader::goto_frame(const unsigned int frame_number){
+  bool KittiObjectsReader::GoToFrame(const unsigned int frame_number){
 
     //clear all the laser cloud information existing
     obstacles_.clear();
@@ -177,23 +177,23 @@ namespace Kitti {
 
         //the position changes every frame, so we need to go to the selected frame
         // and colect its position
-        datum.x = all_obstacles_[i].position[frame][0];
-        datum.y = all_obstacles_[i].position[frame][1];
-        datum.z = all_obstacles_[i].position[frame][2];
-        datum.z -= datum.z/2.0f;
+        datum.position.x = all_obstacles_[i].position[frame][0];
+        datum.position.y = all_obstacles_[i].position[frame][1];
+        datum.position.z = all_obstacles_[i].position[frame][2];
+        datum.position.z -= datum.position.z/2.0f;
 
-        datum.length = datum.arrow_length = all_obstacles_[i].dimension.x;
+        datum.length = datum.arrow.length = all_obstacles_[i].dimension.x;
         datum.width = all_obstacles_[i].dimension.y;
         datum.height = all_obstacles_[i].dimension.z;
 
-        datum.orientation.x = datum.arrow_orientation.x = all_obstacles_[i].orientation[frame][0];
-        datum.orientation.y = datum.arrow_orientation.y = all_obstacles_[i].orientation[frame][1];
-        datum.orientation.z = datum.arrow_orientation.z = all_obstacles_[i].orientation[frame][2];
-        datum.orientation.w = datum.arrow_orientation.w = all_obstacles_[i].orientation[frame][3];
+        datum.orientation.x = datum.arrow.orientation.x = all_obstacles_[i].orientation[frame][0];
+        datum.orientation.y = datum.arrow.orientation.y = all_obstacles_[i].orientation[frame][1];
+        datum.orientation.z = datum.arrow.orientation.z = all_obstacles_[i].orientation[frame][2];
+        datum.orientation.w = datum.arrow.orientation.w = all_obstacles_[i].orientation[frame][3];
 
-        datum.r = mC[0];
-        datum.g = mC[1];
-        datum.b = mC[2];
+        datum.color.red   = mC[0];
+        datum.color.green = mC[1];
+        datum.color.blue  = mC[2];
 
         //adding this obstacle to the vector
         obstacles_.push_back(datum);
@@ -206,19 +206,19 @@ namespace Kitti {
     return total_obstacles_ > 0;
   }
 
-  void KittiObjectsReader::connect_frame(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiObjectsReader::ConnectFrame(boost::signals2::signal<void (unsigned int)> *signal){
     if(frame_connection_.connected())
       frame_connection_.disconnect();
-    frame_connection_ = signal->connect(boost::bind(&KittiObjectsReader::goto_frame, this, _1));
+    frame_connection_ = signal->connect(boost::bind(&KittiObjectsReader::GoToFrame, this, _1));
   }
 
-  void KittiObjectsReader::connect_dataset(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiObjectsReader::ConnectDataset(boost::signals2::signal<void (unsigned int)> *signal){
     if(dataset_connection_.connected())
       dataset_connection_.disconnect();
-    dataset_connection_ = signal->connect(boost::bind(&KittiObjectsReader::set_dataset, this, _1));
+    dataset_connection_ = signal->connect(boost::bind(&KittiObjectsReader::SetDataset, this, _1));
   }
 
-  boost::signals2::signal<void ()> *KittiObjectsReader::signal(){
+  boost::signals2::signal<void ()> *KittiObjectsReader::Signal(){
     return &signal_;
   }
 }

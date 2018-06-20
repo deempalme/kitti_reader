@@ -19,13 +19,16 @@ if(NOT TARGET ${KITTI_LIB})
 
   #header files
   set(HPP_FILES
-    includes/kitti/kitti_objects_reader.h
-    includes/kitti/kitti_point_cloud_reader.h
-    includes/kitti/kitti_vehicle_reader.h
+    include/kitti/kitti_custom_objects.h
+    include/kitti/kitti_objects_reader.h
+    include/kitti/kitti_point_cloud_reader.h
+    include/kitti/kitti_vehicle_reader.h
+    include/kitti/types.h
   )
 
   #source files
   set(CPP_FILES
+    src/kitti_custom_objects.cpp
     src/kitti_objects_reader.cpp
     src/kitti_point_cloud_reader.cpp
     src/kitti_vehicle_reader.cpp
@@ -33,13 +36,13 @@ if(NOT TARGET ${KITTI_LIB})
 
   set(KITTI_DIRS
     libs/kitti
-    libs/kitti/includes
+    libs/kitti/include
 
     CACHE INTERNAL ""
   )
   set(KITTI_LIB ${KITTI_NAME} CACHE INTERNAL "")
 
-  include_directories(includes)
+  include_directories(include)
 
   # +++++++++++++++++++++++++++++++++++ ALGEBRAICA +++++++++++++++++++++++++++++++++++
   # adding the root directory of algebraica source tree to your project
