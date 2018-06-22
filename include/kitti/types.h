@@ -109,7 +109,7 @@ namespace Visualizer {
       float green;
       float blue;
     };
-    float data[3] = { 255.0f, 255.0f, 255.0f };
+    float data[3];
   };
 
   union ColorRGBA{
@@ -143,7 +143,7 @@ namespace Visualizer {
     // Object orientation (in radians)
     OrientationXYZW orientation;
     // Object's RGBA color
-    ColorRGBA color;
+    ColorRGBA color = ColorRGBA{ 255.0f, 255.0f, 255.0f, 255.0f };
     // Arrow's properties:
     Arrow arrow;
     // Object's size in meters
