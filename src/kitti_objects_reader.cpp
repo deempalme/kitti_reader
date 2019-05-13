@@ -33,22 +33,23 @@ namespace Kitti {
       dataset_connection_.disconnect();
   }
 
-  const unsigned int KittiObjectsReader::ActualFrame(){
+  unsigned int KittiObjectsReader::actual_frame() const{
     return frame_;
   }
 
-  const unsigned int KittiObjectsReader::TotalObstacles(){
+  unsigned int KittiObjectsReader::total_obstacles() const{
     return total_obstacles_;
   }
 
-  const std::vector<Visualizer::Object> *KittiObjectsReader::GetObstacles() const{
+  const std::vector<torero::Object> *KittiObjectsReader::obstacles() const{
     return &obstacles_;
   }
 
-  bool KittiObjectsReader::SetDataset(const unsigned int dataset_number){
+  bool KittiObjectsReader::set_dataset(const unsigned int dataset_number){
 
     const std::string dataset(std::to_string(dataset_number));
-    folder_path_.replace(folder_path_.end() - 25 - dataset.size(), folder_path_.end() - 25, dataset);
+    folder_path_.replace(folder_path_.end() - 25 - static_cast<int>(dataset.size()),
+                         folder_path_.end() - 25, dataset);
 
     frame_ = 0;
 
@@ -122,13 +123,13 @@ namespace Kitti {
     return false;
   }
 
-  bool KittiObjectsReader::GoToFrame(const unsigned int frame_number){
+  bool KittiObjectsReader::go_to_frame(const unsigned int frame_number){
 
     //clear all the laser cloud information existing
     obstacles_.clear();
     obstacles_.reserve(30);
     //creates temporal variables out of the loop to avoid creating them in each tracklet
-    Visualizer::Object datum;
+    torero::Object datum;
     datum.name = "O";
     // Total number of obstacles in all frames
     const std::size_t total{all_obstacles_.size()};
@@ -136,10 +137,10 @@ namespace Kitti {
     //go through all the obstacles and choose the ones that appear in this frame
     for(std::size_t i = 0; i < total; i++){
       //checks if this tracklet appears in this frame
-      if(frame_number >= all_obstacles_[i].first_frame &&
-         frame_number < all_obstacles_[i].last_frame){
-        const std::size_t frame = static_cast<std::size_t>(frame_number)
-                                  - all_obstacles_[i].first_frame;
+      if(frame_number >= static_cast<unsigned int>(all_obstacles_[i].first_frame) &&
+         frame_number < static_cast<unsigned int>(all_obstacles_[i].last_frame)){
+        const std::size_t frame = static_cast<std::size_t>(static_cast<int>(frame_number)
+                                  - all_obstacles_[i].first_frame);
 
         //temporal for color
         algebraica::vec3f mC;
@@ -177,19 +178,23 @@ namespace Kitti {
 
         //the position changes every frame, so we need to go to the selected frame
         // and colect its position
-        datum.position.x = all_obstacles_[i].position[frame][0];
-        datum.position.y = all_obstacles_[i].position[frame][1];
-        datum.position.z = all_obstacles_[i].position[frame][2];
-        datum.position.z -= datum.position.z/2.0f;
+        datum.position.point.x = all_obstacles_[i].position[frame][0];
+        datum.position.point.y = all_obstacles_[i].position[frame][1];
+        datum.position.point.z = all_obstacles_[i].position[frame][2];
+        datum.position.point.z -= datum.position.point.z/2.0f;
 
         datum.length = datum.arrow.length = all_obstacles_[i].dimension.x;
         datum.width = all_obstacles_[i].dimension.y;
         datum.height = all_obstacles_[i].dimension.z;
 
-        datum.orientation.x = datum.arrow.orientation.x = all_obstacles_[i].orientation[frame][0];
-        datum.orientation.y = datum.arrow.orientation.y = all_obstacles_[i].orientation[frame][1];
-        datum.orientation.z = datum.arrow.orientation.z = all_obstacles_[i].orientation[frame][2];
-        datum.orientation.w = datum.arrow.orientation.w = all_obstacles_[i].orientation[frame][3];
+        datum.orientation.axes.x = datum.arrow.orientation.axes.x =
+            all_obstacles_[i].orientation[frame][0];
+        datum.orientation.axes.y = datum.arrow.orientation.axes.y =
+            all_obstacles_[i].orientation[frame][1];
+        datum.orientation.axes.z = datum.arrow.orientation.axes.z =
+            all_obstacles_[i].orientation[frame][2];
+        datum.orientation.axes.w = datum.arrow.orientation.axes.w =
+            all_obstacles_[i].orientation[frame][3];
 
         datum.color.red   = mC[0];
         datum.color.green = mC[1];
@@ -200,25 +205,25 @@ namespace Kitti {
       }
     }
 
-    total_obstacles_ = obstacles_.size();
+    total_obstacles_ = static_cast<unsigned int>(obstacles_.size());
     signal_();
 
     return total_obstacles_ > 0;
   }
 
-  void KittiObjectsReader::ConnectFrame(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiObjectsReader::connect_frame(boost::signals2::signal<void (unsigned int)> &signal){
     if(frame_connection_.connected())
       frame_connection_.disconnect();
-    frame_connection_ = signal->connect(boost::bind(&KittiObjectsReader::GoToFrame, this, _1));
+    frame_connection_ = signal.connect(boost::bind(&KittiObjectsReader::go_to_frame, this, _1));
   }
 
-  void KittiObjectsReader::ConnectDataset(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiObjectsReader::connect_dataset(boost::signals2::signal<void (unsigned int)> &signal){
     if(dataset_connection_.connected())
       dataset_connection_.disconnect();
-    dataset_connection_ = signal->connect(boost::bind(&KittiObjectsReader::SetDataset, this, _1));
+    dataset_connection_ = signal.connect(boost::bind(&KittiObjectsReader::set_dataset, this, _1));
   }
 
-  boost::signals2::signal<void ()> *KittiObjectsReader::Signal(){
-    return &signal_;
+  boost::signals2::signal<void ()> &KittiObjectsReader::signal(){
+    return signal_;
   }
 }
