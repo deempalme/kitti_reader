@@ -96,16 +96,16 @@ namespace Kitti {
         ticpp::Node *items = item->FirstChild("poses", false)->FirstChild("item", false);
 
         while(items){
-          Algebraica::vec3f position;
+          algebraica::vec3f position;
           position[0] = std::stof(items->FirstChildElement("tx", false)->GetText());
           position[1] = std::stof(items->FirstChildElement("ty", false)->GetText());
           position[2] = std::stof(items->FirstChildElement("tz", false)->GetText());
           datum.position.push_back(position);
 
-          Algebraica::quaternionF orientation =
-              Algebraica::quaternionF::from_axis_and_angle(1.0f, 0.0f, 0.0f,-std::stof(items->FirstChildElement("ry", false)->GetText())) *
-              Algebraica::quaternionF::from_axis_and_angle(0.0f, 1.0f, 0.0f,-std::stof(items->FirstChildElement("rx", false)->GetText())) *
-              Algebraica::quaternionF::from_axis_and_angle(0.0f, 0.0f, 1.0f, std::stof(items->FirstChildElement("rz", false)->GetText()));
+          algebraica::quaternionF orientation =
+              algebraica::quaternionF::from_axis_and_angle(1.0f, 0.0f, 0.0f,-std::stof(items->FirstChildElement("ry", false)->GetText())) *
+              algebraica::quaternionF::from_axis_and_angle(0.0f, 1.0f, 0.0f,-std::stof(items->FirstChildElement("rx", false)->GetText())) *
+              algebraica::quaternionF::from_axis_and_angle(0.0f, 0.0f, 1.0f, std::stof(items->FirstChildElement("rz", false)->GetText()));
           datum.orientation.push_back(orientation);
 
           items = items->NextSibling("item", false);
@@ -142,7 +142,7 @@ namespace Kitti {
                                   - all_obstacles_[i].first_frame;
 
         //temporal for color
-        Algebraica::vec3f mC;
+        algebraica::vec3f mC;
 
         switch(all_obstacles_[i].type){
         case 0:

@@ -20,8 +20,8 @@ namespace Kitti {
       float y;
       float z;
     } dimension;
-    std::vector<Algebraica::vec3f> position;
-    std::vector<Algebraica::quaternionF> orientation;
+    std::vector<algebraica::vec3f> position;
+    std::vector<algebraica::quaternionF> orientation;
     int first_frame = 0;
     int last_frame = 0;
     unsigned int type = 6;

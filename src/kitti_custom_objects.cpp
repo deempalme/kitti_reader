@@ -113,8 +113,8 @@ namespace Kitti {
 
         Visualizer::Object object;
         const char *line_content = line.c_str();
-        Algebraica::quaternionF quaternion;
-        Algebraica::vec3f euler;
+        algebraica::quaternionF quaternion;
+        algebraica::vec3f euler;
         unsigned int object_type, which_frame, has_arrow;
         /*
          * @File format:
