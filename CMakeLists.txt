@@ -19,6 +19,7 @@ if(NOT TARGET ${KITTI_LIB})
 
   #header files
   set(HPP_FILES
+    include/kitti/kitti_controller.h
     include/kitti/kitti_custom_objects.h
     include/kitti/kitti_objects_reader.h
     include/kitti/kitti_point_cloud_reader.h
@@ -28,6 +29,7 @@ if(NOT TARGET ${KITTI_LIB})
 
   #source files
   set(CPP_FILES
+    src/kitti_controller.cpp
     src/kitti_custom_objects.cpp
     src/kitti_objects_reader.cpp
     src/kitti_point_cloud_reader.cpp
@@ -37,6 +39,8 @@ if(NOT TARGET ${KITTI_LIB})
   set(KITTI_DIRS
     libs/kitti
     libs/kitti/include
+    lib/kitti
+    lib/kitti/include
 
     CACHE INTERNAL ""
   )

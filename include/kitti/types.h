@@ -3,16 +3,16 @@
 
 #include <string>
 
-namespace Visualizer {
+namespace torero {
 #ifndef O_C_I
 #define O_C_I
   union CoordinatesLLA{
-    struct{
+    struct LLA{
       float latitude;
       float longitude;
       float altitude;
-    };
-    float data[3];
+    } coordinates;
+    float data[3] = { 0.0f, 0.0f, 0.0f };
   };
 
   union OrientationPYR{
@@ -20,8 +20,8 @@ namespace Visualizer {
       float pitch;
       float yaw;
       float roll;
-    };
-    float data[3];
+    } angles;
+    float data[3] = { 0.0f, 0.0f, 0.0f };
   };
 
   union OrientationXYZW{
@@ -30,8 +30,8 @@ namespace Visualizer {
       float y;
       float z;
       float w;
-    };
-    float data[4];
+    } axes;
+    float data[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
   };
 #endif
 
@@ -42,8 +42,8 @@ namespace Visualizer {
       float x;
       float y;
       float z;
-    };
-    float data[3];
+    } point;
+    float data[3] = { 0.0f, 0.0f, 0.0f };
   };
 #endif
 
@@ -55,8 +55,8 @@ namespace Visualizer {
       float y;
       float z;
       float intensity;
-    };
-    float data[4];
+    } point;
+    float data[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
   };
 #endif
 
@@ -70,7 +70,7 @@ namespace Visualizer {
       float r;
       float g;
       float b;
-    };
+    } point;
     float data[6];
   };
 
@@ -83,7 +83,7 @@ namespace Visualizer {
       float g;
       float b;
       float intensity;
-    };
+    } point;
     float data[7];
   };
 
@@ -96,7 +96,7 @@ namespace Visualizer {
       float g;
       float b;
       float a;
-    };
+    } point;
     float data[7];
   };
 #endif
@@ -179,6 +179,40 @@ namespace Visualizer {
     std::string gear;
   };
 #endif
+
+
+  // ------------------------------------------------------------------------------------ //
+  // ------------------------------------ CONTROLLER ------------------------------------ //
+  // ------------------------------------------------------------------------------------ //
+#ifndef T_M_C
+#define T_M_C
+  enum class Move : int {
+    Backward  = -1,
+    Beginning = 0,
+    Forward   = 1,
+    Ending    = 2
+  };
+#endif
+}
+
+namespace kitti {
+  enum class UnknownElementType : int {
+    None      =-1,
+    CloudI    = 0,
+    CloudRGB  = 1,
+    CloudRGBI = 2,
+    CloudRGBA = 3
+  };
+
+  struct UnknownElement {
+    UnknownElementType type = UnknownElementType::None;
+    void *element           = nullptr;
+  };
+
+  struct DirectoryPath {
+    int id = -1;
+    std::string path;
+  };
 }
 
 #endif // KITTI_TYPES_H
