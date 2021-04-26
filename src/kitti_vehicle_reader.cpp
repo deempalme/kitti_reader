@@ -1,16 +1,17 @@
 #include "kitti/kitti_vehicle_reader.h"
+#include "algebraica/algebraica.h"
 
 #include <locale>
 #include <codecvt>
 
 namespace Kitti {
   KittiVehicleReader::KittiVehicleReader(const std::string folder_path) :
-    vehicle_{ 0.0f, 0.0f, 0.0f, // position
-              0.0f, 0.0f, 0.0f, // position_xyz
-              0.0f, 0.0f, 0.0f, // velocity
-              0.0f, 0.0f, 0.0f, // acceleration
-              0.0f, 0.0f, 0.0f, 0.0f, // orientation
-              0.0f, 0.0f, 0.0f, // euler angles
+    vehicle_{ { 0.0f, 0.0f, 0.0f }, // position
+              { 0.0f, 0.0f, 0.0f }, // position_xyz
+              { 0.0f, 0.0f, 0.0f }, // velocity
+              { 0.0f, 0.0f, 0.0f }, // acceleration
+              { 0.0f, 0.0f, 0.0f, 0.0f }, // orientation
+              { 0.0f, 0.0f, 0.0f }, // euler angles
               0.0f, 0.0f, 0.0f, // steering, speed, rpm
               0.0f, 0.0f, 0.0f, // fuel, gas, clutch
               0.0f, "P" }, // brake, gear
@@ -93,11 +94,12 @@ namespace Kitti {
       dataset_connection_.disconnect();
   }
 
-  const bool KittiVehicleReader::SetDataset(const unsigned int dataset_number){
+  bool KittiVehicleReader::set_dataset(const unsigned int dataset_number){
     bool result = false;
 
     std::string dataset(std::to_string(dataset_number));
-    folder_path_.replace(folder_path_.end() - 11 - dataset.size(), folder_path_.end() - 11, dataset);
+    folder_path_.replace(folder_path_.end() - 11 - static_cast<int>(dataset.size()),
+                         folder_path_.end() - 11, dataset);
 
     frame_ = 0;
     total_frames_ = 0;
@@ -118,7 +120,7 @@ namespace Kitti {
     return result;
   }
 
-  const bool KittiVehicleReader::GoToFrame(const unsigned int frame_number){
+  bool KittiVehicleReader::go_to_frame(const unsigned int frame_number){
     bool result = false;
 
     //check if the selected frame number is bigger than existing frames
@@ -128,35 +130,51 @@ namespace Kitti {
       frame_ = frame_number;
       std::string file_name("0000000000.txt");
       std::string number(std::to_string(frame_number));
-      file_name.replace(file_name.begin() + 10 - number.size(), file_name.begin() + 10, number);
+      file_name.replace(file_name.begin() + 10 - static_cast<int>(number.size()),
+                        file_name.begin() + 10, number);
 
       //open the binary file of the velodyne_points folder
       std::ifstream file(folder_path_ + "data/" + file_name);
       std::string line;
 
       if(file.is_open()){
-        float acceleration_x, acceleration_y;
+        float acceleration_x{0.0f}, acceleration_y{0.0f};
         while(std::getline(file, line)){
           const char *line_c = line.c_str();
           std::sscanf(line_c, "%f %f %f %f %f %f %*f %*f %f %f %f %f %f %f",
-                      &vehicle_.position.latitude, &vehicle_.position.longitude,
-                      &vehicle_.position.altitude, &vehicle_.euler.roll, &vehicle_.euler.pitch,
-                      &vehicle_.euler.yaw, &vehicle_.velocity.x, &vehicle_.velocity.y,
-                      &vehicle_.velocity.z, &acceleration_x, &acceleration_y,
-                      &vehicle_.acceleration.z);
+                      &vehicle_.position.coordinates.latitude,
+                      &vehicle_.position.coordinates.longitude,
+                      &vehicle_.position.coordinates.altitude,
+                      &vehicle_.euler.angles.roll, &vehicle_.euler.angles.pitch,
+                      &vehicle_.euler.angles.yaw, &vehicle_.velocity.point.x,
+                      &vehicle_.velocity.point.y, &vehicle_.velocity.point.z,
+                      &acceleration_x, &acceleration_y, &vehicle_.acceleration.point.z);
         }
 
-        vehicle_.speed = std::sqrt(vehicle_.velocity.x * vehicle_.velocity.x +
-                                   vehicle_.velocity.y * vehicle_.velocity.y +
-                                   vehicle_.velocity.z * vehicle_.velocity.z) * 3.6f;
+        const algebraica::quaternionF orientation{
+          algebraica::quaternionF::euler_to_quaternion(static_cast<float>(vehicle_.euler.angles.pitch),
+                                                       static_cast<float>(vehicle_.euler.angles.yaw),
+                                                       static_cast<float>(vehicle_.euler.angles.roll))
+        };
+        vehicle_.orientation.axes.x = orientation.x;
+        vehicle_.orientation.axes.y = orientation.y;
+        vehicle_.orientation.axes.z = orientation.z;
+        vehicle_.orientation.axes.w = orientation.w;
+
+        vehicle_.speed = std::sqrt(vehicle_.velocity.point.x * vehicle_.velocity.point.x +
+                                   vehicle_.velocity.point.y * vehicle_.velocity.point.y +
+                                   vehicle_.velocity.point.z * vehicle_.velocity.point.z) * 3.6f;
         vehicle_.rpm = 800.0f + vehicle_.speed * 85;
 
-        vehicle_.acceleration.x += (acceleration_x - vehicle_.acceleration.x) * 0.3f;
-        vehicle_.acceleration.y += (acceleration_y * 0.5f - vehicle_.acceleration.y) * 0.1f;
+        vehicle_.acceleration.point.x += (acceleration_x - vehicle_.acceleration.point.x) * 0.3f;
+        vehicle_.acceleration.point.y += (acceleration_y * 0.5f
+                                          - vehicle_.acceleration.point.y) * 0.1f;
 
-        vehicle_.gas = (vehicle_.acceleration.x > 0.0f)? std::abs(vehicle_.acceleration.x / 5.0f) : 0.0f;
-        vehicle_.brake = (vehicle_.acceleration.x < 0.0f)? std::abs(vehicle_.acceleration.x / 5.0f) : 0.0f;
-        vehicle_.steering_angle = 0.9 * vehicle_.acceleration.y;
+        vehicle_.gas = (vehicle_.acceleration.point.x > 0.0f)?
+                         std::abs(vehicle_.acceleration.point.x / 5.0f) : 0.0f;
+        vehicle_.brake = (vehicle_.acceleration.point.x < 0.0f)?
+                           std::abs(vehicle_.acceleration.point.x / 5.0f) : 0.0f;
+        vehicle_.steering_angle = 0.9f * static_cast<float>(vehicle_.acceleration.point.y);
         vehicle_.clutch = 0.4f;
 
         if(vehicle_.speed < 0.0f)
@@ -183,9 +201,9 @@ namespace Kitti {
 
       std::ifstream file_t(std::string(folder_path_ + "timestamps.txt").c_str());
       if(file_t.is_open()){
-        for(int i = 0; i <= frame_; i++){
+        for(unsigned int i = 0; i <= frame_; i++)
           std::getline(file_t, timestamp_, '\n');
-        }
+
         //close the open file
         file_t.close();
         //timestamp format : 0000-12-31 24:60:60.999
@@ -200,39 +218,43 @@ namespace Kitti {
     return result;
   }
 
-  void KittiVehicleReader::ConnectFrame(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiVehicleReader::connect_frame(boost::signals2::signal<void (unsigned int)> &signal){
     if(frame_connection_.connected())
       frame_connection_.disconnect();
-    frame_connection_ = signal->connect(boost::bind(&KittiVehicleReader::GoToFrame, this, _1));
+    frame_connection_ = signal.connect(boost::bind(&KittiVehicleReader::go_to_frame, this, _1));
   }
 
-  void KittiVehicleReader::ConnectDataset(boost::signals2::signal<void (unsigned int)> *signal){
+  void KittiVehicleReader::connect_dataset(boost::signals2::signal<void (unsigned int)> &signal){
     if(dataset_connection_.connected())
       dataset_connection_.disconnect();
-    dataset_connection_ = signal->connect(boost::bind(&KittiVehicleReader::SetDataset, this, _1));
+    dataset_connection_ = signal.connect(boost::bind(&KittiVehicleReader::set_dataset, this, _1));
   }
 
-  boost::signals2::signal<void ()> *KittiVehicleReader::Signal(){
+  boost::signals2::signal<void ()> *KittiVehicleReader::signal(){
     return &signal_;
   }
 
-  const unsigned int KittiVehicleReader::ActualFrame(){
+  unsigned int KittiVehicleReader::actual_frame() const{
     return frame_;
   }
 
-  const unsigned int KittiVehicleReader::TotalFrames(){
+  unsigned int KittiVehicleReader::total_frames() const{
     return total_frames_;
   }
 
-  const Visualizer::Vehicle *const KittiVehicleReader::Vehicle(){
+  const torero::Vehicle *KittiVehicleReader::vehicle() const{
     return &vehicle_;
   }
 
-  const std::string *const KittiVehicleReader::Timestamp(){
-    return &timestamp_;
+  const std::string &KittiVehicleReader::timestamp() const{
+    return timestamp_;
   }
 
-  const Visualizer::OrientationPYR *KittiVehicleReader::EulerAngles() const{
+  const torero::OrientationPYR *KittiVehicleReader::euler_angles() const{
     return &vehicle_.euler;
+  }
+
+  const torero::OrientationXYZW *KittiVehicleReader::quaternion() const{
+    return &vehicle_.orientation;
   }
 }

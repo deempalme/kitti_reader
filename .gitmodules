@@ -1,0 +1,3 @@
+[submodule "lib/algebraica"]
+	path = lib/algebraica
+	url = https://github.com/deempalme/algebraica.git
