@@ -39,8 +39,6 @@ if(NOT TARGET ${KITTI_LIB})
   set(KITTI_DIRS
     libs/kitti
     libs/kitti/include
-    lib/kitti
-    lib/kitti/include
 
     CACHE INTERNAL ""
   )

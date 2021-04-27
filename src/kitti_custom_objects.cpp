@@ -159,6 +159,7 @@ namespace kitti {
         object.orientation.axes.w = object.arrow.orientation.axes.w = quaternion.w;
         object.arrow.display = has_arrow == 1;
 
+        // TODO: maybe change this?
         if(which_frame == 1)
           if(object_type == 1)
             cylinders_fixed_.push_back(object);
