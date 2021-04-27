@@ -1,5 +1,5 @@
 
-![DroidDrive loves Kitti](images/logo.jpg)
+![DroidDrive loves Kitti](images/logo.png)
 
 # Kitti utilities library
 
