@@ -1,5 +1,5 @@
 
-![DroidDrive loves Kitti](https://github.com/deempalme/kitti_reader/wiki/images/droiddrive_lv_kitti.png)
+![DroidDrive loves Kitti](images/logo.jpg)
 
 # Kitti utilities library
 
